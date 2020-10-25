@@ -35,18 +35,18 @@ class Rs232Interface(object):
             self.ser.open()
 
     def query_response(self):
-        # out = ''
-        # while self.ser.inWaiting() > 0:
-            # out += self.ser.read().decode('ascii')
-        bytes_to_read = self.ser.inWaiting()
-        data = ser.read(bytesToRead)
-        data = data.decode('ascii')
+        out = ''
+        data = 'start'
+        while len(data) is not 0:
+            data = self.ser.readline()
+            out += data.decode()
         return out
 
     def send_message(self, message):
-        byte_gcode = ser.to_bytes(gcode)
-        ser.write(byte_gcode)
-        time.sleep(0.005)
+        message = message.encode('utf-8')
+        byte_gcode = serial.to_bytes(message)
+        self.ser.write(message)
+        time.sleep(0.01)
 
     def close_port():
         self.ser.close()
@@ -76,7 +76,7 @@ class RobotAnnoV6(object):
         else:
             raise NotImplementedError
 
-    def set_joint(self, j1: int, j2: int, j3: int,
+    def set_joints(self, j1: int, j2: int, j3: int,
                   j4: int, j5: int, j6: int):
         gcode = f'G00 J1={j1} J2={j2} J3={j3} J4={j4} J5={j5} J6={j6}\n'
         self.interface.send_message(gcode)
@@ -87,9 +87,13 @@ class RobotAnnoV6(object):
             return False
 
     def set_single_joint(self, joint_idx: int, degree: int):
-        gcode = f'G00 J{joint_index}={degree}\n'
+        gcode = f'G00 J{joint_idx}={degree}\n'
         self.interface.send_message(gcode)
-        response = self.interface.query_respnose()
+        response = self.interface.query_response()
+        if response:
+            return True
+        else:
+            return False
 
     def set_xyzrpy(self, x, y, z, rx, ry, rz):
         gcode = f'G20 X={x} Y={y} Z={z} A={rx} B={ry} C={rz} D=0\n'
@@ -104,7 +108,3 @@ class RobotAnnoV6(object):
         self.interface.send_message(self.modes[mode])
         response = self.interface.query_response()
         return response
-
-
-            
-
